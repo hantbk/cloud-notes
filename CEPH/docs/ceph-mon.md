@@ -3,28 +3,34 @@
 Ceph monitor chịu trách nhiệm giám sát tình trạng của toàn hệ thống. Nó hoạt động như các daemon duy trì sự kết nối trong cluster bằng cách chứa các thông tin cơ bản về cluster, tình trạng các node lưu trữ và thông tin cấu hình cluster. Ceph monitor thực hiện điều này bằng cách duy trì các cluster map. Các cluster map này bao gồm monitor, OSD, PG, CRUSH và MDS map.
 
 ## 1. Các map trong MON
+
 - **Monitor map**: map này lưu giữ thông tin về các node monitor, gồm CEPH Cluster ID, monitor hostname, địa chỉ IP và số port. Nó cũng giữ epoch (phiên bản map tại một thời điểm) hiện tại để tạo map và thông tin về lần thay đổi map cuối cùng. Có thể kiểm tra bằng câu lệnh:
-```
+  
+```bash
 ceph mon dump
 ```
 
 - **OSD map**: map này lưu giữ các trường như cluster ID, epoch cho việc tạo map OSD và lần thay đổi cuối., và thông tin liên quan đến pool như tên, ID, loại, mức nhân bản và PG. Nó cũng lưu các thông tin OSD như tình trạng, trọng số, thông tin host OSD. Có thể kiểm tra OSD map bằng câu lệnh:
-```
+  
+```bash
 ceph osd dump
 ```
 
 - **PG map**: map này lưu giữ các phiên bản của PG (thành phần quản lý các object trong ceph), timestamp, bản OSD map cuối cùng, tỉ lệ đầy và gần đầy dung lượng. Nó cũng lưu các ID của PG, object count, tình trạng hoạt động và srub (hoạt động kiểm tra tính nhất quán của dữ liệu lưu trữ). Kiểm tra PG map bằng lệnh:
-```
+  
+```bash
 ceph pg dump
 ```
 
 - **CRUSH map**: map này lưu các thông tin của các thiết bị lưu trữ trong Cluster, các rule cho tưng vùng lưu trữ. Kiểm tra CRUSH map bằng lệnh:
-```
+  
+```bash
 ceph osd crush dump
 ```
 
 - **MDS map**: lưu thông tin về thời gian tạo và chỉnh sửa, dữ liệu và metadata pool ID, cluster MDS count, tình trạng hoạt động của MDS, epoch của MDS map hiện tại. Kiểm tra MDS map bằng lệnh:
-```
+  
+```bash
 ceph mds dump
 ```
 
@@ -47,12 +53,14 @@ ceph mds dump
 ## 3. Monitor Commands
 
 - Kiểm tra trạng thái service, dùng câu lệnh:
-```
+  
+```bash
 service ceph status mon
 ```
 
 - Các câu lệnh để kiểm tra trạng thái các node monitor:
-```
+  
+```bash
 ceph mon stat
 ceph mon_status
 ceph mon dump

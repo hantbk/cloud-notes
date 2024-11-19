@@ -4,8 +4,8 @@
 
 [Ceph - Architecture](./docs/ceph-architecture.md)
 
-# Services in Ceph Storage 
+## Services in Ceph Storage
 
 - [Ceph RADOS](./docs/ceph-rados.md)
- 
+
 - [Ceph CRUSH](./docs/ceph-crush.md)
