@@ -2,7 +2,7 @@
 
 Ceph là một phần mềm mã nguồn mở với cộng đồng sử dụng và phát triển rất đông. Nó được thiết kế để chạy trên các nền tảng phần cứng thông thường, với quan điểm thiết kế các hệ thống lưu trữ – mở rộng từ hàng petabyte đến exabyte dữ liệu hay hàng nghìn clients truy cập nhưng với chi phí rẻ, hợp lý. Ceph Storage Cluster chứa 1 số lượng lớn các node, các node này tận dụng 1 cách thông minh phần cứng và daemon. Chúng cũng sẽ giao tiếp với nhau để nhân bản và phân phối dữ liệu liên tục.
 
-Ceph cung cấp cụm lưu trữ Ceph (Ceph Storage Cluster) có khả năng mở rộng vô hạn dựa trên RADOS (Reliable Autonomic Distributed Object Store) - A Scalable, Reliable Storage Service for Petabyte-scale Storage Clusters. 
+Ceph cung cấp cụm lưu trữ Ceph (Ceph Storage Cluster) có khả năng mở rộng vô hạn dựa trên RADOS (Reliable Autonomic Distributed Object Store) - A Scalable, Reliable Storage Service for Petabyte-scale Storage Clusters.
 
 Một Cụm Lưu trữ Ceph yêu cầu các thành phần sau: ít nhất một Ceph Monitor và ít nhất một Ceph Manager, cùng với số lượng Ceph Object Storage Daemons (OSDs) tối thiểu bằng số bản sao của một đối tượng được lưu trữ trong cụm Ceph (ví dụ, nếu có ba bản sao của một đối tượng được lưu trữ trong cụm Ceph, thì cụm Ceph đó cần có ít nhất ba OSDs).
 
@@ -41,7 +41,7 @@ Ceph OSD daemon (Ceph Object Storage Daemon) lưu trữ data, xử lý việc đ
 
 Ceph monitor sẽ theo dõi trạng thái của cluster, bao gồm việc theo dõi các monitor map, OSD map, placement group (PG) map, và CRUSH map. Ceph lưu thông tin lịch sử (trong ceph gọi là “epoch” của mỗi trạng thái thay đổi của Ceph Monitors, Ceph OSD Daemons, và PGs.)
 
-### MDSs: 
+### MDSs
 
 Một Ceph Metadata Server (MDS) lưu trữ thông tin về metadata của hệ thống Ceph FileSystem (ceph block device và object storage không sử dụng MDS).
 
