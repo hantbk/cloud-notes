@@ -1,17 +1,36 @@
 # Ceph Overview 
 
-Ceph là một phần mềm mã nguồn mở với cộng đồng sử dụng và phát triển rất đông. Nó được thiết kế để chạy trên các nền tảng phần cứng thông thường, với quan điểm thiết kế các hệ thống lưu trữ – mở rộng đến hàng petabyte nhưng với chi phí rẻ, hợp lý.
+Ceph là một phần mềm mã nguồn mở với cộng đồng sử dụng và phát triển rất đông. Nó được thiết kế để chạy trên các nền tảng phần cứng thông thường, với quan điểm thiết kế các hệ thống lưu trữ – mở rộng từ hàng petabyte đến exabyte dữ liệu hay hàng nghìn clients truy cập nhưng với chi phí rẻ, hợp lý. Ceph Storage Cluster chứa 1 số lượng lớn các node, các node này tận dụng 1 cách thông minh phần cứng và daemon. Chúng cũng sẽ giao tiếp với nhau để nhân bản và phân phối dữ liệu liên tục.
+
+Ceph cung cấp cụm lưu trữ Ceph (Ceph Storage Cluster) có khả năng mở rộng vô hạn dựa trên RADOS (Reliable Autonomic Distributed Object Store) - A Scalable, Reliable Storage Service for Petabyte-scale Storage Clusters. 
+
+Một Cụm Lưu trữ Ceph yêu cầu các thành phần sau: ít nhất một Ceph Monitor và ít nhất một Ceph Manager, cùng với số lượng Ceph Object Storage Daemons (OSDs) tối thiểu bằng số bản sao của một đối tượng được lưu trữ trong cụm Ceph (ví dụ, nếu có ba bản sao của một đối tượng được lưu trữ trong cụm Ceph, thì cụm Ceph đó cần có ít nhất ba OSDs).
+
+Ceph Metadata Server là cần thiết để chạy các máy client của Hệ thống Tệp Ceph (Ceph File System).
+
+Ceph Storage Cluster bao gồm các loại daemon sau:
+
+- Ceph Monitor - `ceph-mon`: Ceph Monitor duy trì 1 bản gốc của Ceph Storage cluster map so với trạng thái hiện tại của Ceph Storage cluster. 1 cụm Ceph monitor (A cluster of Ceph monitors) luôn sẵn sàng nếu có 1 monitor deamon bị fail. Clients có thể truy xuất 1 bản sao của cluster map từ Ceph monitor. Vì monitors yêu cầu tính nhất quán cao nên Ceph sử dụng [Paxos](paxos.md) (blockchain) để đảm bảo thống nhất về trạng thái của Ceph Storage cluster.
+- Ceph OSD Daemon - `ceph-osd`: Ceph OSDs lưu trữ dữ liệu cho Ceph clients. Ceph OSD Daemon cũng sử dụng CPU, memory và mạng của Ceph nodes để sao chép dữ liệu, erasure coding, tái cân bằng (rebalancing), khôi phục, giám sát và báo cáo cho monitor.
+- Ceph Manager - `ceph-mgr`: Ceph Manager duy trì thông tin chi tiết về các placement groups, process metadata và host metadata thay cho Ceph Monitors. Điều này giúp cải thiện đáng kể hiệu suất ở trên quy mô lớn. Ceph manager cũng thực thi nhiều lệnh read-only Ceph CLI như thống kê các placement groups. Ceph manager cũng cung cấp các RESTful API giám sát.
+- Ceph Metadata Server - `ceph-mds` quản lý file metadata khi CephFS được sử dụng để cung cấp file services.
+
+![Ceph daemons](../img/ceph.webp)
+
+Storage cluster clients và mỗi Ceph OSD Daemon sử dụng thuật toán CRUSH để tính toán tối ưu về vị trí dữ liệu thay vì phụ thuộc vào bảng tra cứu trung tâm (central lookup table). Native interface của Ceph Storage Cluster (Ceph storage cluster protocol) cũng như 1 interface của 1 số dịch vụ được sử dụng thông qua `librados` (VD như Ceph clients).
+
+![librados](../img/librados.png)
 
 Hệ thống lưu trữ Ceph có thể được sử dụng với các mục đích khác nhau và cung cấp nhiều hình thức lưu trữ như: 
 - Ceph Object Storage, 
 - Ceph Block Storage 
 - Ceph FileSystem, hoặc cho bất kỳ mục đích nào liên quan đến lưu trữ.
 
+See more: [Ceph Solution for Storage](ceph-solution.md)
+
 > Object và Block của Ceph thường thấy trong các nền tảng điện toán đám mây như OpenStack
 
 Việc Ceph phổ biến là do Ceph là một hệ thống lưu trữ phân tán, tự cân bằng, tự phục hồi, và có khả năng mở rộng. Ceph sử dụng CRUSH algorithm để tính toán data placement, giúp hệ thống có khả năng mở rộng, tự cân bằng, và tự phục hồi.
-
-Một Cluster Ceph được tạo thành từ việc kết nối các node Ceph lại với nhau nó cần ít nhất 1 `Ceph Monitor` và 2 `Ceph OSD Daemons`. 
 
 ## Ceph OSDs
 Ceph OSD daemon (Ceph Object Storage Daemon) lưu trữ data, xử lý việc đồng bộ dữ liệu, recovery, rebalancing và cung cấp thông tin liên quan đến monitoring đến cho Ceph monitoring bằng cách kiểm tra các Ceph OSD daemons khác thông qua heartbeat. Một ceph storage cluster cần ít nhất 2 `ceph OSD daemons` để hướng tới trạng thái active + clean, lúc này hệ thống sẽ có 02 bản copy của data (default của Ceph là 3 bản).
