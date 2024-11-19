@@ -1,6 +1,7 @@
 # Cloud Computing Notes
 
 ## Table of Contents
-- OpenStack Notes
-- Ceph Notes
+
+- [OpenStack Notes](./OPENSTACK/)
+- [Ceph Notes](./CEPH/)
 - Python/Django Notes
