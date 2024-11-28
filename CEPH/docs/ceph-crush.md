@@ -142,3 +142,17 @@ Ta thấy bucket hierarchy có 4 leaf buckets (osd 1-4), 2 node buckets (host 1-
 
 ![Rule](../img/crush-ruleset.png)
 
+Ngoài trừ leaf nodes đại diện cho các OSD, phần còn lại của `hierarchy` là tuỳ ý. Ngoài ra Administrators có thể tạo 1 giá trị riêng (ngoài các `type`), nếu giá trị hiện tại không phù hợp.
+
+Trong CRUSH map các node bucket trong phần `hierarchy` có các giá trị cần chú ý sau:
+
+- `id` là 1 số nguyên âm duy nhất.
+- `alg` là thuật toán của buckets mặc định là straw.
+- `hash` giá trị mặc định là `0` reference tới thuật toán `reference`.
+
+Ngoài ra, trên tất cả các node (bao gồm leaf node và bucket) giá trị `weight` thể hiện tổng dữ liệu mà devices hoặc hierarchy subtree có thể chứa. Weight được tính từ leaves (là size of deivces), sau đó tính tổng cộng dồn lên. Do đó weight của `root` node sẽ là tổng của tất cả devices (leaf node) mà nó có. Thông thường weights được tính theo đơn vị terabytes (TB).
+o đơn vị terabytes (TB).
+
+Ngoài ra, ta có thể dễ dàng xem CRUSH hierarchy của cluster (bao gồm cả weights) bằng câu lệnh: `ceph osd tree`.
+
+
