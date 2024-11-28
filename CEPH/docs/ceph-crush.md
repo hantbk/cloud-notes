@@ -99,3 +99,19 @@ Khi 1 OSD lỗi, 7*3 OSD sẽ diễn ra hoạt động backup => Dung lượng b
 
 Ceph pool cung cấp khả năng quản lý storage với pool. Ceph pool là logical partition để lưu các object. Mỗi pool trong Ceph lưu một số lượng nhất định PGs, quản trị object và được map tới các OSD trên khắp cluster. Vì thế mỗi single pool được phân phối khắp cluster node. Quản trị dữ liệu trong Ceph Dữ liệu bên trong cluster được quản trị dựa trên rất nhiều thành phần. Sự kết hợp các thành phần mang đến cho Ceph tính bảo đảm, tin cậy, mạnh mẽ. Quá trình quản trị dữ liệu bắt đầu từ khi client ghi dữ liệu xuống Ceph pool. Dữ liệu đầu tiên sẽ ghi tới primary OSD sau đó tới các OSD thứ cấp theo cấu hình mức nhân bản tùy chỉnh.
 
+![CEPH POOL](../img/ceph-pool.png)
+
+Ceph storage systems cung cấp cho ta 1 khái niệm Pool, là 1 phân vùng logic để lưu trữ các object. Các Ceph administrators có thể tạo các pool cho từng loại dữ liệu cụ thể; ví dụ như chia ra các pool theo từng mục đích khác nhau.
+
+Ceph pools sẽ xác định các parameters sau:
+
+- Pool Type: Để đảm bảo tính bền vững của dữ liệu Ceph có thể sử dụng 1 trong 2 phương thức: duy trì các replicas của object hoặc `erasure coding`. Các phương thức này được sử dụng trên pool đã được config (2 pool khác nhau có thể dùng 2 phương thức khác nhau) và không thể thay đổi khi đã tạo pool. Pool type sẽ xác định phương thức ta sử dụng. Pool type hoàn toàn `transparent` với Ceph Client.
+- Placement Groups: Trong các storage cluster quy mô lớn, Ceph pool có thể phải lưu trữ hàng triệu objects hoặc nhiều hơn. Ceph sẽ phải xử lý rất nhiều hoạt động như đảm bảo tính bền vững dữ liệu (bằng 1 trong 2 phương thức: replicas hoặc erasure code chunks tuỳ thuộc Pool Type), tính toàn vẹn dữ liệu (bằng các phương thức scrubbing, CRC checks, replication, rebalancing và recovery). Do đó, việc quản lý dữ liệu trên từng đối tượng có thể giảm khả năng mở rộng và gây ra tình trạng nghẽn cổ chai. Ceph giải quyết vấn đề bằng cách chia pool vào các placement groups. Thuật toán CRUSH sẽ tính toán placement groups cho việc lưu trữ dữ liệu và cũng tính Acting Set của OSDs cho placement group. CRUSH sẽ đặt mỗi object vào 1 placement group. Sau đó CRUSH lưu trữ mỗi placement group trong 1 tập hợp OSDs.
+- CRUSH Ruleset: CRUSH cũng đóng 1 vai trò quan trọng khác: CRUSH có thể xác định failure domains và performance domains bằng cách định nghĩa, tổ chức OSDs theo thứ bậc thành osds, nodes, rack hoặc row v.v (failure domains). Để xác định được failure domains và performance domains, Administrators chỉ cần config CRUSH ruleset khi tạo pool và tất nhiên, cũng không thể thay đổi được sau khi pool đã tạo.
+- Durability: Trong các storage cluster quy mô lớn, hardware failure là 1 điều bình thường, không phải là exception. Vì ta chia dữ liệu thành các object để lưu trữ nên khi mất 1 hoặc nhiều object thì nó sẽ gây ảnh hướng tới dữ liệu khi được hợp lại và khiến nó lỗi, ảnh hưởng khá nghiêm trọng. Do đó, để đảm bào tính bền vững của dữ liệu Ceph cung cấp cho ta 2 phương thức:
+  - Replica pools (Pool có type là replica) sử dụng CRUSH failure domains để lưu trữ các replicas của object sang các tổ chức thứ bậc vật lý khác (ví dụ các osds khác, nodes khác, rack khác v.v). Điều này sẽ đảm bảo nếu hardware failure xảy ra.
+  -  Erasure coded pools (Pool có type là erasure coding) lưu trữ mỗi object dưới dạng K+M chunks. Trong đó, K thể hiện số lượng data chunk còn M là số lượng coding chunks. Ngoài ra, tổng của chúng cũng thể hiện tổng số lượng OSDs dùng để lưu trữ object, M cũng cho biết số lượng OSDs tối đa có thể lỗi mà vẫn khôi phục lại được object. Từ góc nhìn của Ceph Clients, storage cluster trông khá là đơn giản. Nó chỉ cần lấy bản sao Cluster Map từ Ceph Monitor, sau đó ghi và đọc object vào pools. Tuy nhiên từ những điều trên, Pools đóng vai trò quan trọng trong việc cách Ceph storage cluster phân phối và lưu trữ dữ liệu.
+ 
+![Rep-pool](../img/replica-pool.jfif)
+
+
