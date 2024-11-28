@@ -5,6 +5,36 @@
 - Giao thức PAXOS ra đời để giải quyết vấn đề đánh giá này.
 - Một process được coi là failure khi có nhiều hơn một nửa các processes nhận thấy rằng process đó đã failure (lý do có thể do mất kết nối, không running, etc)
 
+## PAXOS in CEPH
+
+Trong Ceph, thuật toán Paxos được sử dụng để đảm bảo tính nhất quán mạnh mẽ (strong consistency) giữa các Ceph Monitor
+
+![CEPH PAXOS](../img/ceph-paxos.png)
+
+### 1. Đảm bảo tính nhất quán của Cluster Map
+
+- Cluster Map là trung tâm thông tin của hệ thống Ceph, bao gồm dữ liệu về các Monitor Map, OSD Map, PG Map, Crush Map, MDS Map. Mỗi map duy trì lịch sử các thay đổi đối với trạng thái hoạt động của nó. Ceph Monitors duy trì một bản sao chính của cluster map. Bản sao chính này bao gồm các thành viên trong cụm, trạng thái của cụm, các thay đổi đối với cụm, và thông tin ghi lại tình trạng tổng thể của Cụm Lưu trữ Ceph (Ceph Storage Cluster).
+- Khi xảy ra thay đổi, như thêm/xóa OSD, tạo pool mới, hoặc cập nhật CRUSH map, Paxos đảm bảo rằng tất cả các Ceph Monitor đồng thuận về phiên bản mới nhất của Cluster Map. Điều này ngăn ngừa tình trạng mâu thuẫn giữa các monitor.
+
+### 2. Quản lý các thay đổi thông qua "Paxos Propose"
+
+- Khi có thay đổi trong hệ thống (ví dụ, tạo pool mới qua lệnh ceph osd pool create), thay đổi này được đưa vào hàng đợi "pending changes".
+- Những thay đổi trong hàng đợi sẽ được xử lý trong khoảng thời gian được định nghĩa bởi tham số paxos propose interval (mặc định là 1 giây). Điều này giúp giảm tải xử lý và ngăn việc ghi quá nhiều thay đổi nhỏ liên tục vào hệ thống.
+
+### 3. Ghi trạng thái nhất quán vào kho key-value (RocksDB)
+
+Paxos ghi tất cả các thay đổi vào RocksDB (một cơ sở dữ liệu key-value) trên mỗi Ceph Monitor. Điều này đảm bảo:
+- Tính bền vững: Các thay đổi được ghi vào RocksDB sẽ không bị mất ngay cả khi hệ thống gặp sự cố.
+- Khả năng phục hồi: Các Ceph Monitor mới hoặc khôi phục lại sau lỗi có thể đồng bộ hóa với trạng thái hiện tại thông qua RocksDB.
+
+### 4. Đồng bộ giữa các Monitor
+Trong trường hợp một Ceph Monitor bị lỗi hoặc mới tham gia cụm, Paxos đảm bảo rằng monitor này sẽ nhận được bản sao chính xác của trạng thái hiện tại từ các monitor còn lại, nhờ khả năng đồng bộ hóa dựa trên RocksDB.
+
+### 5. Hỗ trợ trong quá trình mở rộng hệ thống
+Ceph có khả năng mở rộng quy mô rất lớn mà vẫn duy trì tính nhất quán. Paxos giúp đạt được điều này bằng cách đảm bảo rằng các thay đổi trong hệ thống luôn được các monitor đồng thuận trước khi áp dụng
+
+## See more below
+
 ## Các định nghĩa
 - Có 3 roles mà các process có thể có: `proposer`,  `acceptor` và `learner`.
 	- `proposer`: là process đề xuất các giá trị. Đa số thời gian, chỉ có một process đóng vai trò `proposer`, như vậy nó cũng được gọi là leader
