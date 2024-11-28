@@ -7,13 +7,28 @@
 
 ## PAXOS in CEPH
 
-Trong Ceph, thuật toán Paxos được sử dụng để đảm bảo tính nhất quán mạnh mẽ (strong consistency) giữa các Ceph Monitor
+### Problem
+Trước khi Ceph clients có thể đọc hoặc ghi dữ liệu, nó buộc phải contact với Ceph Monitor để có được bản sao mới nhất của cluster map. Ceph Storage Cluster hoàn toàn có thể hoạt động với 1 monitor duy nhất, tuy nhiên điều này lại dẫn đến a single point of failure (nếu monitors down thì Ceph clients không thể đọc hoặc ghi dữ liệu).
+
+### Method 
+Để tăng độ tin cậy và khả năng chịu lỗi Ceph cung cấp 1 cluster of monitor. Trong cluster of monitors, độ trễ (latency) và các lỗi khác có thể khiến monitors bị tụt lại ở phía sau so với trạng thái của cluster. Vì vậy, Ceph phải có sự thống nhất giữa các monitors. 
+
+Để làm được điều này Ceph sử dụng biến thể thuật toán Paxos (blockchain), được sử dụng để đảm bảo tính nhất quán mạnh mẽ (strong consistency) giữa các Ceph Monitor. Thuật toán này yêu cầu phần lớn các monitor cần trong trạng thái active, dựa trên `Majority rule` của Paxos là nếu xử lý `m` monitor bị fail ta cần `2m+1` monitor. 
+```
+Ví dụ nếu cluster có 2 monitor thì sẽ không xử lý được khi 1 trong monitor bị fail nhưng nếu là 3 monitors thì sẽ xử lý được 1 monitor khi nó fail, 4 monitor xử lý được 1 và 5 monitor xử lý được 2. Vì vậy tổng số lượng monitor nên là số lẻ để tối ưu. Số lượng monitors tối thiểu trong production nên là 3 và hiếm khi lên 7 monitor hoặc nhiều hơn. Ngoài ra, Ceph Monitors nodes cần NTP để đồng bộ thời gian với nhau.
+```
 
 ![CEPH PAXOS](../img/ceph-paxos.png)
 
 ### 1. Đảm bảo tính nhất quán của Cluster Map
 
-- Cluster Map là trung tâm thông tin của hệ thống Ceph, bao gồm dữ liệu về các Monitor Map, OSD Map, PG Map, Crush Map, MDS Map. Mỗi map duy trì lịch sử các thay đổi đối với trạng thái hoạt động của nó. Ceph Monitors duy trì một bản sao chính của cluster map. Bản sao chính này bao gồm các thành viên trong cụm, trạng thái của cụm, các thay đổi đối với cụm, và thông tin ghi lại tình trạng tổng thể của Cụm Lưu trữ Ceph (Ceph Storage Cluster).
+- Cluster Map là trung tâm thông tin của hệ thống Ceph, Ceph OSD và Ceph Clients sẽ có các thông tin về cluster topology bao gồm dữ liệu về các Monitor Map, OSD Map, PG Map, Crush Map, MDS Map. 
+  - The Monitor Map: Chứa `fsid` (cluster ID), vị trí (position), địa chỉ và cổng (port) của mỗi monitor. Nó cũng cho biết map epoch (phiên bản map tại 1 thời điểm) hiện tại, thời điểm map được tạo, và lần cuối thay đổi. Để xem monitor map, ta có thể sử dụng câu lệnh `ceph mon dump`.
+  - The OSD Map: Chứa `fsid`, danh sách pools, số lượng nhân bản (replica sizes), PG numbers, a list of OSDs and their status (e.g., up, in), thời gian map được tạo và lần cuối thay đổi. Để xem OSD map, ta có thể sử dụng câu lệnh `ceph osd dump`.
+  - The PG Map: Chứa PG version, the last OSD map epoch, the full ratios, and details on each placement group such as the PG ID, the Up Set, the Acting Set, trạng thái của PG (e.g., `active + clean`), và thống kê dữ liệu sử dụng cho từ pool (data usage statistics for each pool).
+  - The CRUSH Map: Chứa danh sách các thiết bị lưu trữ (storage devices), the failure domain hierarchy (e.g., device, host, rack, row, room, etc.) và rules khi lưu trữ dữ liệu. Để xem CRUSH map, ta dùng câu lệnh ceph osd getcrushmap -o {comp-crushmap-filename}, và sau đó để `decompile` map ta chạy `crushtool -d {comp-crushmap-filename} -o {decomp-crushmap-filename}`. Lúc này ta có thể xem map ở trong file `{decomp-crushmap-filename}` bằng cách sử dụng trình soạn thảo hoặc lệnh cat.
+  - The MDS Map: Chứa MDS map epoch hiện tại, thời điểm map được tạo và lần cuối thay đổi. Nó cũng có pool để lưu trữ metadata, a list of metadata servers, and which metadata servers are `up and in`. Để xem OSD map, ta có thể sử dụng câu lệnh `ceph fs dump`.
+
 - Khi xảy ra thay đổi, như thêm/xóa OSD, tạo pool mới, hoặc cập nhật CRUSH map, Paxos đảm bảo rằng tất cả các Ceph Monitor đồng thuận về phiên bản mới nhất của Cluster Map. Điều này ngăn ngừa tình trạng mâu thuẫn giữa các monitor.
 
 ### 2. Quản lý các thay đổi thông qua "Paxos Propose"
