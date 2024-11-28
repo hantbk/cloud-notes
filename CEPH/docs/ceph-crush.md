@@ -132,3 +132,13 @@ Ceph pools sẽ xác định các parameters sau:
  
 ![Rep-pool](../img/replica-pool.jfif)
 
+### Ceph CRUSH ruleset
+
+Ceph chỉ định CRUSH ruleset (tập hợp rule) cho pool. CRUSH rules sẽ cho biết cách Ceph clients chọn buckets và primary OSD (ở bên trong buckets) để lưu trữ object. Ngoài ra, nó cũng cho biết cách primary OSD chọn buckets và secondary OSDs để lưu trữ replicas hoặc coding chunks. Ví dụ, ta có thể tạo ra rule chọn 1 cặp OSDs (backed by SSDs) cho 2 object replicas hay rule chọn ra 3 OSDs (back by SAS drives) trong 1 data centers khác để lưu 3 replicas.
+
+Để map placement groups cho OSDs, CRUSH map tạo ra 1 phân cấp list of bucket types mà ta có thể nhìn thấy khi generate ra CRUSH map. Việc tạo ra bucket hierarchy để tách biệt leaf nodes theo failure domains hoặc performance domains hoặc cả 2. Failure domains (dịch tạm là miền lỗi) bao gồm các đơn vị phân cấp hosts, chassis, racks, power , pods, rows, rooms, và data centers (Có thể nhìn thấy ở CRUSH map dưới phần type, thực chất đây là implements của Failure domains). Performance domains (dịch tạm là miền hiệu suất) bao gồm failure domains và các OSDs của 1 cấu hình cụ thể (như các ổ SSDs, SATA drives). Những devices sẽ có 1 giá trị class trong CRUSH map (thực chất class là implements của performance domains), sẽ cho ta biết deivce đó là gì như HDD, SSD, NVME để có thể nhanh chóng xây dựng CRUSH hierarchies. Các Administrators có thể dựa vào Performance domains để deploy storage pools 1 cách thích hợp. Ví dụ như các devices toàn SSD sẽ có 1 pool riêng so với 1 pool devices toàn HDD, điều này sẽ tối ưu hiệu suất hơn so với việc cho hết lại thành 1 pool.
+
+Ta thấy bucket hierarchy có 4 leaf buckets (osd 1-4), 2 node buckets (host 1-2) và 1 rack node (rack 1). Rack node này không được coi là root default.
+
+![Rule](../img/crush-ruleset.png)
+
