@@ -1,27 +1,36 @@
 # Triển khai cụm Ceph với cephadm
 
-We look into using the cephadm tooling to bootstrap and configure a small cluster with 3 drives and multiple hosts. We go into how cephadm administers different resources and shares them between hosts.
+Node vm1: 192.168.103.148
 
-## Bước 1: Installing main host
+## Bước 1: Cài đặt docker, openssh, ceph trên từng cụm máy 
 
-Đầu tiên ta cần `curl` để fetch cephadm application
-
-```bash
-sudo apt install -y curl
-```
-
-Sau đó ta download application và make it executable
+### Docker
 
 ```bash
-curl --silent --remote-name --location https://github.com/ceph/ceph/raw/pacific/src/cephadm/cephadm
-chmod +x cephadm
+sudo apt update
+sudo apt install -y apt-transport-https ca-certificates curl software-properties-common
+
+curl -fsSL https://download.docker.com/linux/ubuntu/gpg | sudo gpg --dearmor -o /usr/share/keyrings/docker-archive-keyring.gpg
+
+echo "deb [arch=$(dpkg --print-architecture) signed-by=/usr/share/keyrings/docker-archive-keyring.gpg] https://download.docker.com/linux/ubuntu $(lsb_release -cs) stable" | sudo tee /etc/apt/sources.list.d/docker.list > /dev/null
+
+sudo apt update
+sudo apt install -y docker-ce
+
+sudo systemctl start docker
+sudo systemctl enable docker
 ```
 
-Cephadm có thể sử dụng để thiết lập phiên bản muốn install, chọn Pacific để cài đặt cephadm
+### Openssh
 
 ```bash
-./cephadm add-repo --release pacific
-./cephadm install
+sudo apt install openssh-server
+sudo systemclt enable ssh
 ```
 
-Bootstraping a cluster
+### Cephadm
+
+```bash
+apt update -y
+apt install -y cephadm ceph-common
+```
