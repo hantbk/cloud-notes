@@ -1,97 +1,37 @@
 # Triển khai cụm Ceph với cephadm
 
-Node vm1: 192.168.103.148
+Node vm1: 192.168.103.148 chạy với quyền root user
 
-## Bước 1: Cài đặt docker, openssh, ceph trên từng cụm máy 
-
-### Docker
+## Bước 1: Cài đặt cephadm
 
 ```bash
-sudo apt update
-sudo apt install -y apt-transport-https ca-certificates curl software-properties-common
-
-curl -fsSL https://download.docker.com/linux/ubuntu/gpg | sudo gpg --dearmor -o /usr/share/keyrings/docker-archive-keyring.gpg
-
-echo "deb [arch=$(dpkg --print-architecture) signed-by=/usr/share/keyrings/docker-archive-keyring.gpg] https://download.docker.com/linux/ubuntu $(lsb_release -cs) stable" | sudo tee /etc/apt/sources.list.d/docker.list > /dev/null
-
-sudo apt update
-sudo apt install -y docker-ce
-
-sudo systemctl start docker
-sudo systemctl enable docker
+apt install -y cephadm
 ```
 
-### Openssh
+## Bước 2: Bootstrap cephadm
 
 ```bash
-sudo apt install openssh-server
-sudo systemclt enable ssh
-```
-
-### Cephadm
-
-```bash
-apt update -y
-apt install -y cephadm ceph-common
+cephadm bootstrap --mon-ip 192.168.103.150
 ```
 
 ```bash
-nano /etc/ssh/sshd_config
-PermitRootLogin yes
-```
-
-## Bước 2: Khởi tạo Cluster
-
-Deploy ceph trên node vm1 : 192.168.103.149
-
-```bash
-cephadm bootstrap --mon-ip 192.168.103.149 --ssh-user root --cluster-network 192.168.103.0/24
-```
-
-Ta có thông tin về cluster và dashboard
-
 Ceph Dashboard is now available at:
 
-	    URL: https://vm2:8443/
-	    User: admin
-	    Password: anm8m5sal4
+     URL: https://vm1:8443/
+    User: admin
+Password: uj2bt96evc
 
-Trước đó, cần xét iptables mở các cổng cần thiết cho các node monitor, osd, mgr,...
-Ceph monitor thường mặc định lấy các gói tin trên cổng 3300 và 6789
-Ceph OSD daemons thường sẽ kết nối bắt đầu từ cổng 6800, và kết nối đến giải cổng cuối là 7568. Mỗi lần kết nối trên 1 cổng không thành công, ceph OSD daemons sẽ tự động thử kết nối lên trên cổng tiếp theo.
-Thay đổi luật trong iptables của các node bằng lệnh sau:
-
-```bash
-# Đảm bảo các truy cập đầu vào của Ceph ports trên subnet
-iptables -A INPUT -s 192.168.103.0/24 -p tcp -m state --state NEW -m multiport --dports 3300,6789,6800:7300,9283,8888,8889,18080,9100,9222 -j ACCEPT
-
-# Đảm bảo các truy cập đầu ra của Ceph ports trên subnet
-iptables -A OUTPUT -d 192.168.103.0/24 -p tcp -m state --state NEW -m multiport --dports 3300,6789,6800:7300,9283,8888,8889,18080,9100,9222 -j ACCEPT
-
-# Cấp quyền kết nối SSH trên subnets
-iptables -A INPUT -s 192.168.103.0/24 -p tcp -m state --state NEW --dport 22 -j ACCEPT
-iptables -A OUTPUT -d 192.168.103.0/24 -p tcp -m state --state NEW --dport 22 -j ACCEPT
+Enabling client.admin keyring and conf on hosts with "admin" label
 ```
 
-Chạy tự động bằng file osd_spec.yaml
+Command trên sẽ :
 
-```bash
-service_type: osd
-service_id: osd_spec_hdd
-placement:
-  hosts:
-    - vm2
-spec:
-  osds_per_device: 3
-  data_devices: #Ổ chứa data
-    rotational: 1 #Do là HDD nên có xoay
-    size: '20G:' #Lấy tất cả các ổ kích thước lớn hơn 20
-```
+- Tạo ra 1 Monitor và 1 Manager trên node hiện tại (node vm1)
+- Tạo ra 1 SSH key pair trên ceph cluster và lưu nó vào root user của node hiện tại `/root/.ssh/authoized_keys`
+- Tạo 1 bản copy của public key vào `/etc/ceph/ceph.pub`
+- Tạo 1 file cấu hình đơn giản `/etc/ceph/ceph.conf`. File này cần thiết để giao tiếp với các daemon khác
+- Tạo 1 bản copy của `client.admin` secret key vào `/etc/ceph/ceph.client.admin.keyring`.
+- Thêm label `_admin` vào bootstrap host. Mặc định, bất kỳ host nào với label này sẽ nhận được 1 bản copy của `/etc/ceph/ceph.conf` và `/etc/ceph/ceph.client.admin.keyring` từ bootstrap host.
 
-Chạy dry run để kiểm tra kiểm thử trước:
-
-```bash
-ceph orch apply -i osd_spec.yaml --dry-run
-```
 
 
