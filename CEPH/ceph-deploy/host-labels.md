@@ -11,4 +11,4 @@ Nhãn này ngăn chặn cephadm schedule thêm daemon trên host. Nếu nó đư
 Nhãn ngăn chặn daemon memory từ việc tự động tune kể cả khi `osd_memory_target_auto_tune` hoặc options tương tự được bật cho 1 hoặc nhiều daemons trên host đó.
 
 - `_admin`: Cung cấp ceph.conf và client.admin keyring
-  Mặc định, nhãn `_admin` được apply vào host đầu tiên ở trong cluster (nơi bootstrap được chạy) và `client.admin` key được cung cấp cho host đó thông qua `ceph orch client-keyring ...`. Việc thêm nhãn đến các host khác sẽ làm cephadm deploy 
+  Mặc định, nhãn `_admin` được apply vào host đầu tiên ở trong cluster (nơi bootstrap được chạy) và `client.admin` key được cung cấp cho host đó thông qua `ceph orch client-keyring ...`. Việc thêm nhãn đến các host khác sẽ làm cephadm deploy config và keyring file cho host đó ở `/etc/ceph/`.

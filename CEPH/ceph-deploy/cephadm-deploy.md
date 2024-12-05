@@ -138,3 +138,9 @@ root@vm1:~# ceph status
 Mặc định, `ceph.conf` file và 1 bản copy của `client.admin` keyring được để trong `/etc/ceph` trên tất cả các host và có label `_admin`. Label này chỉ được apply vào bootstrap host. Recommend 1 hoặc nhiều host khác được thêm vào cluster với label `_admin` để cho phép Ceph CLI (vd: `cephadm shell`) có thể dễ dàng truy cập trên nhiều host. Để add label `_label` vào các host khác, sử dụng `ceph orch host label add *<host>* _admin`.
 
 See more: [Adding Hosts](adding-host.md)
+
+## Bước 5: Adding MONs
+
+Một cụm Ceph thông thường có 3 hoặc 5 Monitor daemons được phân bổ trên các host khác nhau. Recommend  deploy 5 MONs nếu có nhiều hơn 5 nodes trong cluster. 
+
+See more: [Adding MONs](adding-mon.md)

@@ -64,6 +64,20 @@ ceph orch host drain *<host>*
 
 Nhãn `_no_schedule` và `_no_conf_keyring` sẽ được thêm vào host, ngăn chặn việc schedule thêm daemon và cập nhật cấu hình và keyring.
 
-See more: [Special host labels]()
+See more: [Special host labels](host-labels.md)
+
+Nếu muốn drain daemons nhưng vẫn để `ceph.conf` và keyring file trên host, có thể sử dụng `--keep-conf-keyring` flag
 
 ```bash
+ceph orch host drain *<host>* --keep-conf-keyring
+```
+
+Điều này sẽ apply `_no_schedule` label vào host nhưng không apply `_no_conf_keyring` label.
+
+Tất cả OSDs trên host sẽ được scheduled để removed. Check status remove của OSDs:
+
+```bash
+ceph orch osd rm status
+```
+
+See more: [Removing OSDs](osd-management.md)
